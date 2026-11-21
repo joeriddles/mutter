@@ -10,4 +10,5 @@ Mutter picks names in this order:
 3. The first word of git config `user.name`.
 4. The first word of the full name in the [GECOS field](https://en.wikipedia.org/wiki/Gecos_field)
    of the current user. On Windows, Mutter uses the display name.
-5. "Human", if all else fails.
+5. The login name, which `whoami` prints.
+6. "Human", if all else fails.
