@@ -9,6 +9,7 @@ import (
 	"math/rand/v2"
 	"os"
 	"os/exec"
+	"os/user"
 	"strings"
 )
 
@@ -41,11 +42,37 @@ func defaultName() string {
 			return fields[0]
 		}
 	}
+	if name := userName(); name != "" {
+		return name
+	}
 	return "Human"
 }
 
+// userName returns the first word of the full name in the GECOS field of the
+// current user, or else the login name that whoami prints. On Windows, it uses
+// the display name, or else the account name without the domain.
+func userName() string {
+	u, err := user.Current()
+	if err != nil {
+		return ""
+	}
+	login := u.Username
+	if i := strings.LastIndex(login, `\`); i >= 0 {
+		login = login[i+1:]
+	}
+	// By convention, "&" in the GECOS field stands for the capitalized login name.
+	capitalized := login
+	if capitalized != "" {
+		capitalized = strings.ToUpper(capitalized[:1]) + capitalized[1:]
+	}
+	if fields := strings.Fields(strings.ReplaceAll(u.Name, "&", capitalized)); len(fields) > 0 {
+		return fields[0]
+	}
+	return login
+}
+
 func main() {
-	name := flag.String("name", "", "name at the start of the opener (default $MUTTER_NAME, then the git user.name)")
+	name := flag.String("name", "", "name at the start of the opener (default $MUTTER_NAME, then the git user.name, then the GECOS full name, then the login name)")
 	flag.Parse()
 	if *name == "" {
 		*name = defaultName()
