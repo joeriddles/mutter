@@ -8,6 +8,8 @@ import (
 	"io"
 	"math/rand/v2"
 	"os"
+	"os/exec"
+	"strings"
 )
 
 var nouns = []string{
@@ -29,9 +31,25 @@ func pick(words []string) string {
 	return words[rand.IntN(len(words))]
 }
 
+func defaultName() string {
+	if name := strings.TrimSpace(os.Getenv("MUTTER_NAME")); name != "" {
+		return name
+	}
+	out, err := exec.Command("git", "config", "user.name").Output()
+	if err == nil {
+		if fields := strings.Fields(string(out)); len(fields) > 0 {
+			return fields[0]
+		}
+	}
+	return "Human"
+}
+
 func main() {
-	name := flag.String("name", "Joe", "name at the start of the opener")
+	name := flag.String("name", "", "name at the start of the opener (default $MUTTER_NAME, then the git user.name)")
 	flag.Parse()
+	if *name == "" {
+		*name = defaultName()
+	}
 
 	opener := fmt.Sprintf("%s The %s %s...", *name, pick(nouns), pick(verbs))
 
