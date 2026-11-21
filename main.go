@@ -9,6 +9,7 @@ import (
 	"math/rand/v2"
 	"os"
 	"os/exec"
+	"os/user"
 	"strings"
 )
 
@@ -41,11 +42,33 @@ func defaultName() string {
 			return fields[0]
 		}
 	}
+	if name := gecosName(); name != "" {
+		return name
+	}
 	return "Human"
 }
 
+// gecosName returns the first word of the full name in the GECOS field of the
+// current user. On Windows, it uses the display name.
+func gecosName() string {
+	u, err := user.Current()
+	if err != nil {
+		return ""
+	}
+	// By convention, "&" in the GECOS field stands for the capitalized login name.
+	login := u.Username
+	if login != "" {
+		login = strings.ToUpper(login[:1]) + login[1:]
+	}
+	fields := strings.Fields(strings.ReplaceAll(u.Name, "&", login))
+	if len(fields) == 0 {
+		return ""
+	}
+	return fields[0]
+}
+
 func main() {
-	name := flag.String("name", "", "name at the start of the opener (default $MUTTER_NAME, then the git user.name)")
+	name := flag.String("name", "", "name at the start of the opener (default $MUTTER_NAME, then the git user.name, then the GECOS full name)")
 	flag.Parse()
 	if *name == "" {
 		*name = defaultName()
